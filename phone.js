@@ -2,7 +2,7 @@ const ui=globalThis.GramGrid;
 export const el=id=>document.getElementById(id);
 const val=(id,value)=>el(id).textContent=value;
 const panels=["balance","receive","send","sendAmount","recipient","swap","history","contacts","review","tracking"];
-const titles={home:"Wallet",send:"Send",receive:"Receive",swap:"Swap",balance:"Balance",history:"History",contacts:"Contacts",review:"Review",sign:"Sign",pending:"Pending",done:"Confirmed",error:"Error"};
+const titles={home:"Wallet",send:"Send",receive:"Receive",swap:"Swap",balance:"Balance",history:"History",contacts:"Contacts",review:"Review",sign:"Sign",pending:"Pending",error:"Error"};
 export function menu(open){
   for(const [id,icon] of [["recipient-contact","contacts"],["pick-qr","qr"]]){
     const canvas=el(id).querySelector("canvas");
@@ -39,7 +39,7 @@ export function phone(s,context){
   el("connect").className=context.unlocked?"quiet":"primary";
   el("home-value").hidden=!s.address||s.usd===null;
   val("home-value",s.usd===null?"":"≈ $"+s.usd.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
-  val("title",({sendAmount:"Amount",recipient:"Recipient"})[page]||titles[page]||"Wallet");el("network").value=s.network;
+  val("title",({sendAmount:"Amount",recipient:"Recipient",done:s.successLabel})[page]||titles[page]||"Wallet");el("network").value=s.network;
   el("network").disabled=busy;el("connect").disabled=busy;
   val("who",s.address?s.address.slice(0,8)+"…"+s.address.slice(-8):"Wallet setup");
   val("connect",context.hasVault?(context.unlocked?"Lock":"Unlock"):"Create or restore wallet");
@@ -85,10 +85,11 @@ export function phone(s,context){
   const link=page==="pending"?context.walletExplorer:page==="done"?receipt:"";
   el("explorer").hidden=!link;
   if(link)el("explorer").href=link;
-  val("explorer",page==="pending"?"View wallet activity":"View in explorer");
+  val("explorer",page==="pending"?"View wallet activity":"View on Tonviewer");
   let result="Waiting for on-chain confirmation.";
   if(pending?.submissionError)result="Delivery is unconfirmed. "+pending.submissionError;
   if(expired)result="The signing window has expired. Checking whether the request reached the chain.";
-  val("result",page==="error"?s.error:page==="done"?"Transaction confirmed on-chain.":result);
+  el("result").hidden=page==="done";
+  val("result",page==="error"?s.error:page==="done"?"":result);
   val("status",(page==="sendAmount"&&s.amountNote)||s.message||(page==="review"&&pending?"A previous transaction is pending. View its status before signing.":"")||(s.address&&!context.unlocked?"Unlock your wallet on your phone to send funds.":"")||(s.network==="testnet"&&page==="swap"?"The GRAM/USDT pair is available on Mainnet.":""));
 }

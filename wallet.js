@@ -90,7 +90,10 @@ async function refresh(){
         const hex=/^[a-f0-9]{64}$/i.test(match.hash)?match.hash:Array.from(atob(match.hash),c=>c.charCodeAt(0).toString(16).padStart(2,"0")).join("");
         receipt=networks[network].explorer+"/transaction/"+hex;
         if(match.failed)err(Error("The transaction failed on-chain."));
-        else page("done");
+        else{
+          s.successLabel=record.other?"Swap successful":"Transfer successful";
+          page("done");
+        }
       }
     }
     const funds=await balances(network,owner);

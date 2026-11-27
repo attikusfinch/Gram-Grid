@@ -32,6 +32,18 @@
 }
 .pixel-wallet .screen-head { gap: 8px; }
 .pixel-wallet .screen-head canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.pixel-wallet #mobile-screen[data-page="done"] {
+  grid-template-rows: minmax(min-content,1fr) auto minmax(0,1fr) auto;
+}
+.pixel-wallet [data-page="done"] .screen-head { align-self: end; justify-items: center; }
+.pixel-wallet #mobile-screen[data-page="done"] .screen-head canvas { display: block; width: 64px; height: 64px; }
+.pixel-wallet [data-page="done"] .screen-actions { grid-row: 4; }
+.pixel-wallet [data-page="done"] #explorer:not([hidden]) {
+  display: grid; place-items: center; min-height: 48px; width: 100%;
+  background: var(--phosphor); color: #152012; clip-path: var(--key-cut);
+  font: 650 17px/1.3 var(--pixel-font); text-decoration: none;
+}
+.pixel-wallet [data-page="done"] #explorer:focus-visible { outline: 2px solid #152012; outline-offset: -5px; }
 .pixel-wallet #setup-icon { display: block; margin: 0 auto 8px; }
 .pixel-wallet header strong { display: inline-flex; align-items: center; gap: 6px; }
 .pixel-wallet #setup:has(#stage-welcome:not([hidden])) #setup-title { margin: 0; font-size: clamp(32px,7vw,42px); }

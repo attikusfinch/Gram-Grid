@@ -2,6 +2,7 @@
 (() => {
   const actions = ["send", "receive", "swap", "balance", "history", "contacts"];
   const labels = ["Send", "Receive", "Swap", "Balance", "History", "Contacts"];
+  const historyDate=new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric"});
   // Each stroke follows the same 16 × 16 grid. Straight segments use a two-pixel nib.
   const paths = {
     previous: [[[10,2],[4,8],[10,14]]], next: [[[5,2],[11,8],[5,14]]],
@@ -129,14 +130,24 @@
       text("Transaction pending",205,30);return;
     }
     if(s.screen==="phone"||s.screen==="sign"){symbol("phone",288,128,6);return;}
-    if(s.screen==="done"){symbol("check",288,110,6);return;}
+    if(s.screen==="done"){
+      symbol("check",288,110,6);text(s.successLabel,205,30);return;
+    }
     symbol(s.screen,288,58,4);
     switch(s.screen){
       case "balance":if(s.holdings){text(amount(s.holdings.GRAM,"GRAM")+" GRAM"+(s.network==="mainnet"?"   ·   "+amount(s.holdings.USDT,"USDT")+" USDT":""),142);text(s.usd===null?"—":"≈ $"+s.usd.toFixed(2),209,36);}else symbol("empty",288,154,3);break;
       case "receive":if(s.notice){text("+"+amount(s.notice.units,s.notice.asset)+" "+s.notice.asset,158,36);}else symbol("phone",288,140,4);if(s.address){text(s.address.slice(0,7)+"…"+s.address.slice(-7),244,22);}break;
       case "swap":symbol("previous",75,145,2);symbol("next",501,145,2);text(s.option?"USDT → GRAM":"GRAM → USDT",145,35);text("Swap direction",235,27);break;
       case "contacts":{const c=s.contacts[s.option];if(c){text(c.name,151);text(c.address.slice(0,7)+"…"+c.address.slice(-7),208,22);}else{symbol("phone",288,149,3);text("Add contacts on your phone",224,27);}break;}
-      case "history":{const tx=s.history[s.option];if(tx){text((tx.incoming?"+":"−")+amount(tx.units,tx.asset)+" "+tx.asset,144);text((s.option+1)+" / "+s.history.length,210,19);}else symbol("empty",288,158,3);break;}
+      case "history":{
+        const tx=s.history[s.option];
+        if(tx){
+          text((tx.incoming?"+":"−")+amount(tx.units,tx.asset)+" "+tx.asset,137);
+          if(Number.isFinite(tx.time))text(historyDate.format(tx.time*1000),188,24);
+          text((s.option+1)+" / "+s.history.length,240,19);
+        }else symbol("empty",288,158,3);
+        break;
+      }
     }
   }
   globalThis.GramGrid={actions,labels,create,enter,apply,draw,amount,adjustSend,icon};
