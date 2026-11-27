@@ -44,6 +44,12 @@
   function create(){
     return {screen:"home",focus:0,option:0,invoice:null,holdings:null,usd:null,address:"",network:"mainnet",history:[],contacts:[],notice:null,error:"",revision:0};
   }
+  function historyPeer(tx){
+    const address=tx.counterparty||(tx.incoming?tx.from:tx.to);
+    if(!address)return "";
+    const short=address.length>15?address.slice(0,7)+"…"+address.slice(-7):address;
+    return (tx.incoming?"From ":"To ")+short;
+  }
   function enter(s,screen){
     if(screen==="swap"||screen==="send")s.swapDraft=screen==="swap";
     if(screen==="home"||s.screen==="home"){s.sendAsset="GRAM";s.sendUnits=0n;s.amountText=null;}
@@ -126,9 +132,10 @@
     }
     if(s.screen==="error"){symbol("warning",288,94,5);text(s.error,188);return;}
     if(s.screen==="pending"){
-      symbol("history",288,100,6);
-      text("Transaction pending",205,30);
-      if(s.retryingSubmission)text("Retrying automatically…",247,22);
+      const offset=s.retryingSubmission?-19:0;
+      symbol("history",288,105+offset,6);
+      text("Transaction pending",208+offset,30);
+      if(s.retryingSubmission)text("Retrying automatically…",231,22);
       return;
     }
     if(s.screen==="phone"||s.screen==="sign"){symbol("phone",288,128,6);return;}
@@ -148,13 +155,14 @@
       case "history":{
         const tx=s.history[s.option];
         if(tx){
-          text((tx.incoming?"+":"−")+amount(tx.units,tx.asset)+" "+tx.asset,137);
-          if(Number.isFinite(tx.time))text(historyDate.format(tx.time*1000),188,24);
-          text((s.option+1)+" / "+s.history.length,240,19);
+          text((tx.incoming?"+":"−")+amount(tx.units,tx.asset)+" "+tx.asset,120);
+          if(Number.isFinite(tx.time))text(historyDate.format(tx.time*1000),164,24);
+          text(historyPeer(tx),202,23);
+          text((s.option+1)+" / "+s.history.length,254,19);
         }else symbol("empty",288,158,3);
         break;
       }
     }
   }
-  globalThis.GramGrid={actions,labels,create,enter,apply,draw,amount,adjustSend,icon};
+  globalThis.GramGrid={actions,labels,create,enter,apply,draw,amount,adjustSend,icon,historyPeer};
 })();

@@ -32,6 +32,17 @@
 }
 .pixel-wallet .screen-head { gap: 8px; }
 .pixel-wallet .screen-head canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.pixel-wallet #mobile-screen[data-page="pending"] {
+  grid-template-rows: repeat(3, max-content);
+  align-content: safe center;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
+.pixel-wallet #mobile-screen[data-page="pending"] .screen-head canvas { display: block; width: 48px; height: 48px; }
+.pixel-wallet [data-page="pending"] .screen-body { overflow: visible; scrollbar-gutter: auto; }
+.pixel-wallet [data-page="pending"] #tracking { display: grid; gap: 6px; justify-items: center; }
+.pixel-wallet [data-page="pending"] #result { margin: 0; text-wrap: balance; }
+.pixel-wallet [data-page="pending"] #explorer { display: grid; place-items: center; min-height: 44px; }
 .pixel-wallet #mobile-screen[data-page="done"] {
   grid-template-rows: minmax(min-content,1fr) auto minmax(0,1fr) auto;
 }
@@ -126,6 +137,7 @@
 .pixel-wallet #word-check input:checked + span { background: var(--phosphor); color: #152012; border-color: var(--phosphor); }
 .pixel-wallet :is(.address,#phone-address,#who) { font: 13px/1.55 ui-monospace,monospace; overflow-wrap: anywhere; }
 .pixel-wallet .ledger-row, .pixel-wallet .line { border-color: var(--display-line); }
+.pixel-wallet .ledger-peer { grid-column: 1 / -1; text-align: start; }
 .pixel-wallet :is(.ledger-row strong,.line b) { font-variant-numeric: tabular-nums; color: var(--display-ink); }
 @media (forced-colors: active) {
   .pixel-wallet button.primary { clip-path: none; border: 1px solid ButtonText; }

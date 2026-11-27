@@ -68,7 +68,11 @@ export function phone(s,context){
     const row=document.createElement("div"),date=document.createElement("span"),amount=document.createElement("strong");
     row.className="ledger-row";date.textContent=new Date(t.time*1000).toLocaleString("en-US");
     amount.textContent=(t.incoming?"+":"−")+ui.amount(t.units,t.asset)+" "+t.asset;
-    row.append(date,amount);return row;
+    row.append(date,amount);
+    const peer=document.createElement("span");
+    peer.className="ledger-peer";peer.textContent=ui.historyPeer(t);
+    if(peer.textContent){peer.title=t.counterparty||(t.incoming?t.from:t.to);row.append(peer);}
+    return row;
   });
   list("people",s.contacts,"No contacts yet",c=>{const b=document.createElement("button");b.textContent=c.name+" · "+c.address.slice(-7);b.onclick=()=>chooseContact(c);return b;});
   el("check-transfer").disabled=busy;

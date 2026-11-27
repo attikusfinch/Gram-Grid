@@ -128,7 +128,9 @@ export function transferRecord(a,net,owner){
 export async function history(network,address){
   const net=networks[network];
   const j=await get(net,"actions",{account:address,action_type:["ton_transfer","jetton_transfer"],limit:32,sort:"desc"});
-  return j.actions.map(a=>transferRecord(a,net,address)).filter(Boolean);
+  return j.actions.map(a=>transferRecord(a,net,address)).filter(Boolean).map(row=>({
+    ...row,counterparty:friendly(row.incoming?row.from:row.to,network),
+  }));
 }
 export async function rates(){
   const r=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,tether&vs_currencies=usd&include_last_updated_at=true",{signal:AbortSignal.timeout(7000)});
