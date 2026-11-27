@@ -131,7 +131,15 @@
       corners(g,s.option?321:159,184,96,64);
       text(s.option?"Cancel":tx.other?"Confirm swap":"Confirm transfer",269,26);return;
     }
-    if(s.screen==="error"){symbol("warning",288,94,5);text(s.error,188);return;}
+    if(s.screen==="error"){
+      symbol("warning",288,94,5);
+      const lines=s.error.split("\n");
+      if(lines.length===2){
+        text(lines[0],171,23);
+        text(lines[1],205,23);
+      }else text(s.error,188);
+      return;
+    }
     if(s.screen==="pending"){
       const offset=s.retryingSubmission?-19:0;
       symbol("history",288,105+offset,6);

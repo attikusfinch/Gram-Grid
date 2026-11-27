@@ -257,7 +257,7 @@ async function prepare(isSwap){
       tx.message=transferMessage(network,owner,tx,b,memo);
     }
     if(generation!==epoch||task!==quoteTask)return;
-    if(isSwap&&n>maxSwap(b,asset,tx))throw Error("Not enough GRAM for this quote and its fees. Adjust the amount or select Max again.");
+    if(isSwap&&n>maxSwap(b,asset,tx))throw Error("Not enough GRAM for this quote and its fees.\nAdjust the amount or select Max again.");
     if(b.GRAM<=BigInt(tx.message.amount))throw Error("Not enough GRAM for the transaction and fees.");
     s.invoice=tx;page("review");
   }catch(e){if(generation===epoch&&task===quoteTask)throw e;}
