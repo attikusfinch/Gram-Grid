@@ -115,7 +115,8 @@
     if(s.screen==="sendAmount"){
       symbol(s.swapDraft?"swap":"send",288,55,4);symbol("down",55,149,2);symbol("up",521,149,2);
       g.font="600 40px sans-serif";g.fillStyle=ink;g.fillText(amount(s.sendUnits,s.sendAsset)+" "+s.sendAsset,288,150,397);
-      text(s.amountNote||(s.swapDraft?"Swap to "+(s.sendAsset==="GRAM"?"USDT":"GRAM"):"Amount"),235,27);return;
+      const hint=s.swapDraft?"Swap to "+(s.sendAsset==="GRAM"?"USDT":"GRAM"):s.selectedContact?"To "+s.selectedContact.name:"Amount";
+      text(s.amountNote||hint,235,27);return;
     }
     if(s.screen==="recipient"){
       ["contacts","camera","phone"].forEach((name,i)=>symbol(name,104+i*184,141,4));

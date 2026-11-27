@@ -51,7 +51,7 @@ export function phone(s,context){
     val("amount-label","Amount in "+s.sendAsset);
     const value=s.amountText??ui.amount(s.sendUnits,s.sendAsset);
     if(el("amount").value!==value)el("amount").value=value;
-    val("choose-recipient",s.swapDraft?"Get quote":"Choose recipient");
+    val("choose-recipient",s.swapDraft?"Get quote":s.selectedContact?"Review transfer":"Choose recipient");
     el("choose-recipient").disabled=s.sendUnits===0n||busy;
     el("amount").disabled=busy;
   }

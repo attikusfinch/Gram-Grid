@@ -31,7 +31,7 @@ function render(){
     s.screen==="contacts"&&["recipient","phone"].includes(previousPages.at(-1)?.screen)||s.screen==="review"&&Boolean(s.invoice)||s.screen==="swap"&&s.network==="mainnet";
   s.locked=Boolean(local.pub)&&!local.unlocked();
   s.unlockOnPhone=s.locked&&Boolean(unlockPrompt);
-  if(s.screen==="home"){el("transfer").reset();s.usedMax=false;}
+  if(s.screen==="home"){el("transfer").reset();s.usedMax=false;s.selectedContact=null;}
   phone(s,{pending,receipt,busy,chooseContact,walletExplorer:s.address?networks[s.network].explorer+"/address/"+s.address:"",unlocked:local.unlocked(),hasVault:Boolean(local.pub)});
   el("resume").hidden=!pending||s.screen==="pending";
   glasses.paint();
@@ -54,7 +54,7 @@ function notify(msg){s.message=msg;render();}
 function account(address){
   epoch++;quoteTask++;seen=null;pending=null;receipt="";busy=false;
   el("transfer").reset();el("save").reset();
-  Object.assign(s,{address,holdings:null,history:[],notice:null,usd:null,qr:null,receiveAsset:"GRAM",invoice:null,contacts:stored("gg.contacts."+s.network,[])});
+  Object.assign(s,{address,holdings:null,history:[],notice:null,usd:null,qr:null,receiveAsset:"GRAM",invoice:null,selectedContact:null,contacts:stored("gg.contacts."+s.network,[])});
   pending=address?stored(key("pending"),null):null;
   page(pending?"pending":"home");
   if(!address)return;
@@ -128,10 +128,11 @@ function setForm(name){
   s.form=name;page("phone");
 }
 function chooseContact(c){
-  if(!c)return;
+  if(!c||busy)return;
+  s.selectedContact=c;
   el("to").setCustomValidity("");el("to").value=c.address;
   if(s.sendMenu)void prepare(false).catch(err);
-  else page("send");
+  else openAction("send");
 }
 async function scan(src,onLens=false){
   const version=s.revision,generation=epoch;
@@ -144,6 +145,7 @@ async function scan(src,onLens=false){
   if(invoice.assetSpecified&&invoice.asset!==s.sendAsset)throw Error("This QR requests "+invoice.asset+". Change the send currency first.");
   if(invoice.units!==null&&invoice.units!==s.sendUnits)throw Error("This QR requests "+ui.amount(invoice.units,invoice.asset)+" "+invoice.asset+". Change the amount first.");
   el("to").setCustomValidity("");el("to").value=address;
+  s.selectedContact=null;
   if(invoice.memo)el("memo").value=invoice.memo;
   if(onLens)await prepare(false);
 }
@@ -215,6 +217,7 @@ function gesture(input){
   else if(effect==="chooseRecipient"||effect==="quote"){
     if(s.sendUnits<=0n){s.amountNote="Choose an amount above zero";render();}
     else if(effect==="quote")void prepare(true).catch(err);
+    else if(s.selectedContact)void prepare(false).catch(err);
     else page("recipient");
   }
   else if(effect==="manual")setForm("recipient");
@@ -313,7 +316,7 @@ el("network").onchange=handle(()=>{
 });
 el("back").onclick=()=>s.sendMenu?gesture("menuBack"):page("home");el("cancel").onclick=()=>page("home");el("resume").onclick=()=>page("pending");
 el("transfer").onsubmit=handle(()=>prepare(false));el("sign").onclick=handle(sign);
-el("to").oninput=()=>el("to").setCustomValidity("");
+el("to").oninput=()=>{s.selectedContact=null;el("to").setCustomValidity("");};
 el("pick-qr").onclick=()=>el("file").click();
 el("dismiss").onclick=()=>{if(pending?.expires>now()){notify("Wait until the request expires before dismissing it.");return;}if(!busy&&confirm("Stop tracking? The signed transaction may still go through.")){localStorage.removeItem(key("pending"));pending=null;page("home");}};
 el("copy").onclick=handle(async()=>{await navigator.clipboard.writeText(s.address);notify("Address copied.");});
