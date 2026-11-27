@@ -97,6 +97,7 @@
     const g=canvas.getContext("2d");g.clearRect(0,0,576,288);g.textAlign="center";g.textBaseline="middle";
     function text(str,y,size=27){g.font="600 "+size+"px sans-serif";g.fillStyle=ink;g.fillText(str,288,y,530);}
     function symbol(name,x,y,z){icon(g,name,x,y,z,ink);}
+    if(s.unlockOnPhone){symbol("phone",288,104,6);text("Unlock your wallet on your phone",207,28);return;}
     if(s.screen==="home"){
       if(s.needsPhone&&!s.address){symbol("phone",288,104,6);text("Set up your wallet on your phone",207,28);return;}
       actions.forEach((act,i)=>{

@@ -15,6 +15,7 @@ s.network=localStorage.getItem("gg.network")==="testnet"?"testnet":"mainnet";
 let pending=null,receipt="",busy=false,epoch=0,reading=-1,seen=null,quoteTask=0;
 const previousPages=[];
 let amountEdit=0;
+let unlockPrompt=null;
 const local=phoneWallet(()=>{
   const address=local.pub?walletContract(local.pub,s.network).address.toString({bounceable:false,testOnly:s.network==="testnet"}):"";
   if(address!==s.address)account(address);
@@ -29,6 +30,7 @@ function render(){
   s.sendMenu=["send","sendAmount","recipient"].includes(s.screen)||s.screen==="phone"&&s.form==="recipient"||
     s.screen==="contacts"&&["recipient","phone"].includes(previousPages.at(-1)?.screen)||s.screen==="review"&&Boolean(s.invoice)||s.screen==="swap"&&s.network==="mainnet";
   s.locked=Boolean(local.pub)&&!local.unlocked();
+  s.unlockOnPhone=s.locked&&Boolean(unlockPrompt);
   if(s.screen==="home"){el("transfer").reset();s.usedMax=false;}
   phone(s,{pending,receipt,busy,chooseContact,walletExplorer:s.address?networks[s.network].explorer+"/address/"+s.address:"",unlocked:local.unlocked(),hasVault:Boolean(local.pub)});
   el("resume").hidden=!pending||s.screen==="pending";
@@ -66,9 +68,19 @@ function updateQr(){
     render();
   }catch(e){s.qr=null;err(e);}
 }
-function requireWallet(){
+function requestUnlock(){
   if(!s.address)throw Error("Create or restore a wallet on your phone.");
-  if(!local.unlocked())throw Error("Unlock your wallet on your phone.");
+  if(!unlockPrompt){
+    unlockPrompt=local.open().then(()=>new Promise(resolve=>{
+      el("setup").addEventListener("close",()=>resolve(local.unlocked()),{once:true});
+    })).finally(()=>{unlockPrompt=null;render();});
+    render();
+  }
+  return unlockPrompt;
+}
+function openAction(id){
+  page(id);
+  if(s.address&&(id==="send"||id==="swap")&&!local.unlocked())void requestUnlock().catch(err);
 }
 async function refresh(){
   if(!s.address||reading===epoch||s.retryingSubmission)return;
@@ -195,6 +207,7 @@ function gesture(input){
   if(busy||el("setup").open)return;
   if(!s.address){if(input==="back")void glasses.close();return;}
   local.touch();
+  if(input==="click"&&s.screen==="home"){openAction(ui.actions[s.focus]);return;}
   const original=s.screen,option=s.option,effect=ui.apply(s,input);
   if(typeof effect==="number"){void editAmount(effect);return;}
   if(effect==="exit"){void glasses.close();return;}
@@ -217,9 +230,12 @@ function gesture(input){
   else{if(original!==s.screen){remember(original,option,s.screen);quoteTask++;s.message="";if(!["review","sign"].includes(s.screen))s.invoice=null;}render();}
 }
 async function prepare(isSwap){
-  requireWallet();
   if(busy)return;
   const generation=epoch,task=++quoteTask,network=s.network,owner=s.address;
+  if(!local.unlocked()){
+    const unlocked=await requestUnlock();
+    if(!unlocked||generation!==epoch||task!==quoteTask)return;
+  }
   const asset=s.sendAsset,n=s.sendUnits;
   let address=null;
   if(!isSwap){
@@ -248,8 +264,9 @@ async function prepare(isSwap){
   finally{if(generation===epoch){busy=false;if(task===quoteTask)s.message="";render();}}
 }
 async function sign(){
-  requireWallet();
   if(busy||pending||!s.invoice||s.screen!=="review")return;
+  if(!local.unlocked()){await requestUnlock();return;}
+  if(s.invoice.expires<=now()+5){await prepare(Boolean(s.invoice.other));return;}
   if(!navigator.locks)throw Error("Open the wallet in a secure, up-to-date WebView to sign.");
   const tx=s.invoice,network=s.network,owner=s.address,generation=epoch,revision=s.revision,storageKey=key("pending");
   busy=true;render();
@@ -261,6 +278,7 @@ async function sign(){
       if(pending){page("pending");return;}
       const state=await signingState(network,owner);
       if(generation!==epoch||revision!==s.revision||s.invoice!==tx)return;
+      if(!local.unlocked()){await requestUnlock();return;}
       const boc=local.withSeed(seed=>signedTransfer(seed,network,owner,tx,state));
       const rec={id:crypto.randomUUID(),time:now(),expires:tx.expires,asset:tx.asset,units:String(tx.units),other:tx.other,minimum:tx.other?String(tx.minimum):null,address:tx.address,memo:tx.memo||"",hash:messageHash(boc)};
       localStorage.setItem(storageKey,JSON.stringify(rec));
@@ -285,8 +303,8 @@ async function sign(){
   finally{busy=false;render();}
 }
 function handle(fn){return async e=>{e?.preventDefault();try{await fn();}catch(error){err(error);}};}
-menu(page);account("");
-el("connect").onclick=handle(async()=>{if(local.unlocked())local.lock();else await local.open();});
+menu(openAction);account("");
+el("connect").onclick=handle(async()=>{if(local.unlocked())local.lock();else if(s.address)await requestUnlock();else await local.open();});
 local.load().catch(e=>notify(e.message));
 document.addEventListener("pointerdown",e=>{if(e.isTrusted)local.touch();});
 el("network").onchange=handle(()=>{
