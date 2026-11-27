@@ -22,7 +22,7 @@ Open the [phone and virtual glasses side by side](http://127.0.0.1:5186/app/?emu
 | Action | What you can do |
 | --- | --- |
 | **Send** | Choose GRAM or USDT, set an amount, then select a contact, scan a payment QR with the phone camera, or enter an address. Review before signing. |
-| **Receive** | Show or share the phone’s QR. The same TON address accepts both assets on Mainnet. The lens shows a shortened address and new confirmed receipts while the app is running. |
+| **Receive** | The glasses show a shortened address and prompt you to show the QR code on your phone. You can also share the address from the phone. The same TON address accepts both assets on Mainnet. |
 | **Swap** | Exchange GRAM and USDT through STON.fi. Review the estimated output, minimum received, and quote expiry before confirming. |
 | **Balance** | Check both holdings and their combined USD estimate. Balances come from TON Center and prices from CoinGecko. |
 | **History** | Browse finalized transfers for the current address. |

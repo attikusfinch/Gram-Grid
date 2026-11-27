@@ -138,7 +138,11 @@
     symbol(s.screen,288,58,4);
     switch(s.screen){
       case "balance":if(s.holdings){text(amount(s.holdings.GRAM,"GRAM")+" GRAM"+(s.network==="mainnet"?"   ·   "+amount(s.holdings.USDT,"USDT")+" USDT":""),142);text(s.usd===null?"—":"≈ $"+s.usd.toFixed(2),209,36);}else symbol("empty",288,154,3);break;
-      case "receive":if(s.notice){text("+"+amount(s.notice.units,s.notice.asset)+" "+s.notice.asset,158,36);}else symbol("phone",288,140,4);if(s.address){text(s.address.slice(0,7)+"…"+s.address.slice(-7),244,22);}break;
+      case "receive":
+        text("To receive funds, show the QR code",139,27);
+        text("on your phone",174,27);
+        if(s.address)text(s.address.slice(0,7)+"…"+s.address.slice(-7),244,22);
+        break;
       case "swap":symbol("previous",75,145,2);symbol("next",501,145,2);text(s.option?"USDT → GRAM":"GRAM → USDT",145,35);text("Swap direction",235,27);break;
       case "contacts":{const c=s.contacts[s.option];if(c){text(c.name,151);text(c.address.slice(0,7)+"…"+c.address.slice(-7),208,22);}else{symbol("phone",288,149,3);text("Add contacts on your phone",224,27);}break;}
       case "history":{
