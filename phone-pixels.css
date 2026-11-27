@@ -31,8 +31,9 @@
   color: var(--display-ink); letter-spacing: 0; text-wrap: balance;
 }
 .pixel-wallet .screen-head { gap: 8px; }
-.pixel-wallet .screen-head canvas, .pixel-wallet #setup-icon { width: 32px; height: 32px; image-rendering: pixelated; }
-.pixel-wallet #setup-icon { display: grid; place-content: center; width: 56px; height: 56px; margin: 0 auto 8px; color: var(--phosphor); font: 52px/1 ui-monospace, monospace; }
+.pixel-wallet .screen-head canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.pixel-wallet #setup-icon { display: block; margin: 0 auto 8px; }
+.pixel-wallet header strong { display: inline-flex; align-items: center; gap: 6px; }
 .pixel-wallet #setup:has(#stage-welcome:not([hidden])) #setup-title { margin: 0; font-size: clamp(32px,7vw,42px); }
 .pixel-wallet #setup-title:focus { outline: none; }
 .pixel-wallet #setup:has(#stage-welcome[hidden]) #setup-icon { display: none; }
