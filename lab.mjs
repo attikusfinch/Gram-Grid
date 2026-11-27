@@ -46,7 +46,7 @@ const { createServer } = await import("node:net");
 const probe = createServer();
 await new Promise((resolve, reject) => probe.once("error", reject).listen(19897, "127.0.0.1", () => probe.close(resolve)));
 server.listen(5186, "127.0.0.1", () => {
-  child = spawn(simulator, [base + "/app/", "--automation-port", "19897"], {windowsHide:true, stdio:"ignore"});
+  child = spawn(simulator, [base + "/app/?simulator=1", "--automation-port", "19897"], {windowsHide:true, stdio:"ignore"});
   child.once("exit", () => server.close());
   console.log("G2 + R1 lab: " + base);
 });

@@ -37,6 +37,7 @@ Open the [phone and virtual glasses side by side](http://127.0.0.1:5186/app/?emu
 | **Swipe up / down** | Move through the grid or a list. On a Send or Swap amount, **Up adds 0.1** and **Down subtracts 0.1** of the selected asset. |
 | **Tap** | Open the selected item or accept the current step. On the review screen, tapping the selected checkmark confirms the operation in an unlocked session. |
 | **Long press** | Return to the home grid. While the system menu is open, select **Home** there. |
+| **Double click** | Return to the grid from a section. At the grid, the local lab stays open. On G2, this gesture requests the system exit prompt. |
 | **Menu** | Choose **Back**, **Home**, or **Lock wallet**. Send and Swap provide a dedicated amount menu. |
 
 The amount menu starts with **Max**, followed by **−0.1, −1, −10, +0.1, +1, +10**, **Reset to 0**, **Back**, and **Home**. For a GRAM transfer, Max leaves 0.02 GRAM for fees. For a swap, it also accounts for the GRAM required by the quoted route. USDT operations need GRAM for fees.

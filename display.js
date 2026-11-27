@@ -76,7 +76,12 @@ export function display(state,onGesture,onError){
     });
     await paint();
   }
-  return {start,paint,close:()=>bridge?.shutDownPageContainer(1),capture:async()=>{
+  async function close(){
+    // The desktop simulator clears the display immediately instead of showing the G2 exit prompt.
+    if(location.hostname==="127.0.0.1"&&new URLSearchParams(location.search).get("simulator")==="1")return;
+    try{await bridge?.shutDownPageContainer(1);}catch(error){onError(error);}
+  }
+  return {start,paint,close,capture:async()=>{
     if(!ready)throw Error("Open the camera in the Even app or choose a photo on your phone.");
     const asset=await bridge.captureImageFromCamera();
     if(asset)return asset.base64.startsWith("data:")?asset.base64:"data:"+asset.mimeType+";base64,"+asset.base64;
