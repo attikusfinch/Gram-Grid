@@ -1,4 +1,4 @@
-import {decryptVault,deriveSeed,ensureSecure,minPasswordLength,newPhrase,readVault,saveVault,validatePassword} from "./local-wallet.js";
+import {checkVaultOwner,decryptVault,deriveSeed,ensureSecure,minPasswordLength,newPhrase,readVault,saveVault,validatePassword} from "./local-wallet.js";
 
 const by=id=>document.getElementById(id);
 function shuffled(items){
@@ -57,11 +57,12 @@ export function phoneWallet(onChange){
     if(start<0||start+list.length>12){by("setup-message").textContent="A recovery phrase has exactly 12 words.";return;}
     list.forEach((word,i)=>{recoveryWords[start+i].value=word.toLowerCase();});
     by("setup-message").textContent="";
-    (recoveryWords[start+list.length]||by("password")).focus();
+    (recoveryWords[start+list.length]||by("setup-submit")).focus();
   });
-  let record,seed,phrase="",positions=[],wrongAnswers=0,mode="",saving=false,revision=0,deadline=0;
+  let record,seed,importSeed,phrase="",positions=[],wrongAnswers=0,mode="",saving=false,revision=0,deadline=0;
   const idle=5*60*1000;
   function clearInputs(){
+    importSeed?.fill(0);importSeed=null;
     phrase="";positions=[];wrongAnswers=0;by("word-check").replaceChildren();by("words").replaceChildren();
     for(const id of secretFields)by(id).value="";
     for(const input of recoveryWords)input.value="";
@@ -76,17 +77,18 @@ export function phoneWallet(onChange){
   function stage(name){
     mode=name;by("setup-message").textContent="";
     for(const id of ["welcome","backup","verify","recover","unlock"])by("stage-"+id).hidden=id!==name;
-    by("pass-fields").hidden=!["backup","recover","unlock"].includes(name);
-    by("repeat-label").hidden=name==="unlock";
+    by("pass-fields").hidden=!["backup","protect","unlock"].includes(name);
+    by("repeat-label").hidden=name!=="backup";
+    by("repeat").disabled=name!=="backup";
     by("password").autocomplete=name==="unlock"?"current-password":"new-password";
     by("recovery").disabled=name!=="recover";
-    by("password-label").textContent=name==="unlock"?"Device password":name==="recover"?"New device password":"Create a device password";
-    by("password-help").textContent=name==="unlock"?"Enter the password you set on this device.":name==="recover"?`Choose a new password of at least ${minPasswordLength} characters to encrypt your key on this device. Your recovery words stay the same.`:`Use at least ${minPasswordLength} characters. This password encrypts your key on this device. Your 12 words restore your wallet on another device.`;
+    by("password-label").textContent=name==="unlock"?"Device password":name==="protect"?"New device password":"Create a device password";
+    by("password-help").textContent=name==="unlock"?"Enter the password you set on this device.":name==="protect"?`Choose at least ${minPasswordLength} characters to protect the imported wallet on this device.`:`Use at least ${minPasswordLength} characters. This password encrypts your key on this device. Your 12 words restore your wallet on another device.`;
     by("setup-submit").hidden=name==="welcome";
     by("setup-cancel").hidden=name==="welcome";
     by("setup-cancel").textContent=name==="verify"?"Start over":name==="unlock"?"Close":"Back";
-    by("setup-submit").textContent=({backup:"I wrote them down",verify:"Verify and open",recover:"Import",unlock:"Open wallet"})[name]||"";
-    by("setup-title").textContent=({welcome:"Gram Grid",backup:"Write down your 12 words",verify:"Check your backup",recover:"Import wallet",unlock:"Unlock wallet"})[name];
+    by("setup-submit").textContent=({backup:"I wrote them down",verify:"Verify and open",recover:"Continue",protect:"Import wallet",unlock:"Open wallet"})[name]||"";
+    by("setup-title").textContent=({welcome:"Gram Grid",backup:"Write down your 12 words",verify:"Check your backup",recover:"Import wallet",protect:"Protect your wallet",unlock:"Unlock wallet"})[name];
     dialog.querySelector(".setup-inner").scrollTop=0;
     if(dialog.open)by("setup-title").focus({preventScroll:true});
   }
@@ -108,6 +110,7 @@ export function phoneWallet(onChange){
   for(const id of ["recover-new","recover-saved"])by(id).onclick=()=>{clearInputs();stage("recover");};
   by("setup-cancel").onclick=()=>{
     if(saving)return;
+    if(mode==="protect"){importSeed?.fill(0);importSeed=null;by("password").value="";stage("recover");return;}
     if(mode==="unlock"){dialog.close();return;}
     const trigger=mode==="recover"?(record?"recover-saved":"recover-new"):"make";
     clearInputs();stage(record?"unlock":"welcome");by(trigger).focus();
@@ -119,12 +122,18 @@ export function phoneWallet(onChange){
     try{
       saving=true;by("setup-submit").disabled=true;
       const password=by("password").value;
-      if(!["backup","verify","recover","unlock"].includes(mode))return;
+      if(mode==="recover"){
+        next=await deriveSeed(recoveryWords.map(input=>input.value.trim()).join(" "));
+        if(current!==revision||!dialog.open)return;
+        if(record)checkVaultOwner(next,record);
+        importSeed=next;next=null;by("password").value="";stage("protect");by("password").focus();return;
+      }
+      if(!["backup","verify","protect","unlock"].includes(mode))return;
       if(mode==="unlock")next=await decryptVault(record,password);
       else{
         validatePassword(password);
-        if(password!==by("repeat").value)throw Error("The passwords do not match.");
         if(mode==="backup"){
+          if(password!==by("repeat").value)throw Error("The passwords do not match.");
           by("words").replaceChildren();stage("verify");nextChallenge();return;
         }
         if(mode==="verify"&&!choicesMatch(phrase.split(" "),positions)){
@@ -132,7 +141,7 @@ export function phoneWallet(onChange){
           if(wrongAnswers===3){nextChallenge();throw Error("Three incorrect attempts. Choose the words for the new positions.");}
           throw Error("Check your words and their order. Attempts before the positions change: "+(3-wrongAnswers)+".");
         }
-        next=await deriveSeed(mode==="recover"?recoveryWords.map(input=>input.value.trim()).join(" "):phrase);
+        next=mode==="protect"?importSeed.slice():await deriveSeed(phrase);
         if(current!==revision||!dialog.open)return;
         record=await saveVault(next,password,record);
       }

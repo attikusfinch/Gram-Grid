@@ -56,11 +56,15 @@ async function encryptionKey(password,salt){
     return await crypto.subtle.deriveKey({name:"PBKDF2",hash:"SHA-256",salt,iterations:600000},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
   }finally{bytes.fill(0);}
 }
+export function checkVaultOwner(seed,expected){
+  const pub=publicHex(seed);
+  if(expected&&pub!==expected.pub)throw Error("This phrase belongs to a different wallet. Your existing wallet is safe.");
+  return pub;
+}
 export async function saveVault(seed,password,expected){
   ensureSecure();
   validatePassword(password);
-  const pub=publicHex(seed);
-  if(expected&&pub!==expected.pub)throw Error("This phrase belongs to a different wallet. Your existing wallet is safe.");
+  const pub=checkVaultOwner(seed,expected);
   const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
   const key=await encryptionKey(password,salt);
   const cipher=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,seed);

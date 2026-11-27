@@ -45,7 +45,7 @@ The amount menu starts with **Max**, followed by **−0.1, −1, −10, +0.1, +1
 <details>
 <summary><strong>Recovery, locking, and transaction tracking</strong></summary>
 
-- **Create or import.** Recovery uses 12 English BIP-39 words. During creation, three incorrect checks trigger three new word positions, with unlimited attempts. In **Import**, paste the full phrase into any word field and set a device password.
+- **Create or import.** Recovery uses 12 English BIP-39 words. During creation, three incorrect checks trigger three new word positions, with unlimited attempts. In **Import**, paste the full phrase into any word field and select **Continue**. Once the words are verified, set a new device password and select **Import wallet**.
 - **Local custody.** The phone derives an Ed25519 key at <code>m/44′/607′/0′</code> for TON Wallet V5R1. The vault in IndexedDB uses AES-256-GCM and a password-derived key (PBKDF2-SHA256, 600,000 iterations). Use localhost, HTTPS, or the installed Even App webview for wallet access.
 - **Session lock.** Restarting the app or spending five minutes idle locks signing. **Lock wallet** does this immediately. The address, balance, and receive QR remain available.
 - **Pending transfers.** Before broadcasting, Gram Grid saves the signed message hash locally. If the network response is lost, the app can resume checking TON Center for the transaction.
