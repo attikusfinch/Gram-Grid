@@ -79,7 +79,7 @@
     if(s.screen==="send"||s.screen==="swap")return "chooseCurrency";
     if(s.screen==="sendAmount")return s.swapDraft?"quote":"chooseRecipient";
     if(s.screen==="recipient")return ["pickContact","camera","manual"][s.option];
-    if(s.screen==="contacts"){if(s.contacts.length)return "contact";return;}
+    if(s.screen==="contacts"&&s.contacts.length)return "contact";
     if(s.screen==="review"){
       if(s.option){enter(s,"home");return;}
       return "handoff";
