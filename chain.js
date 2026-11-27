@@ -1,8 +1,8 @@
 import {Address, beginCell, Cell, loadMessage, storeMessage} from "@ton/core";
 
 export const networks={
-  mainnet:{id:"-239",base:"https://toncenter.com",explorer:"https://tonviewer.com",usdt:"EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"},
-  testnet:{id:"-3",base:"https://testnet.toncenter.com",explorer:"https://testnet.tonviewer.com",usdt:null},
+  mainnet:{id:"-239",base:"https://toncenter.com",explorer:"https://gram.org",usdt:"EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"},
+  testnet:{id:"-3",base:"https://testnet.toncenter.com",explorer:"https://testnet.tonscan.org",usdt:null},
 };
 export const one=asset=>asset==="GRAM"?1000000000n:1000000n;
 // Gram Grid keeps this margin for wallet fees when filling Max.

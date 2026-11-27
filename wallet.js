@@ -30,7 +30,7 @@ function render(){
     s.screen==="contacts"&&["recipient","phone"].includes(previousPages.at(-1)?.screen)||s.screen==="review"&&Boolean(s.invoice)||s.screen==="swap"&&s.network==="mainnet";
   s.locked=Boolean(local.pub)&&!local.unlocked();
   if(s.screen==="home"){el("transfer").reset();s.usedMax=false;}
-  phone(s,{pending,receipt,busy,chooseContact,walletExplorer:s.address?networks[s.network].explorer+"/"+s.address:"",unlocked:local.unlocked(),hasVault:Boolean(local.pub)});
+  phone(s,{pending,receipt,busy,chooseContact,walletExplorer:s.address?networks[s.network].explorer+"/address/"+s.address:"",unlocked:local.unlocked(),hasVault:Boolean(local.pub)});
   el("resume").hidden=!pending||s.screen==="pending";
   glasses.paint();
 }
@@ -88,7 +88,7 @@ async function refresh(){
       if(match&&pending?.id===record.id){
         localStorage.removeItem(key("pending"));pending=null;
         const hex=/^[a-f0-9]{64}$/i.test(match.hash)?match.hash:Array.from(atob(match.hash),c=>c.charCodeAt(0).toString(16).padStart(2,"0")).join("");
-        receipt=networks[network].explorer+"/transaction/"+hex;
+        receipt=networks[network].explorer+"/tx/"+hex;
         if(match.failed)err(Error("The transaction failed on-chain."));
         else{
           s.successLabel=record.other?"Swap successful":"Transfer successful";

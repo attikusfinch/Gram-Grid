@@ -85,7 +85,7 @@ export function phone(s,context){
   const link=page==="pending"?context.walletExplorer:page==="done"?receipt:"";
   el("explorer").hidden=!link;
   if(link)el("explorer").href=link;
-  val("explorer",page==="pending"?"View wallet activity":"View on Tonviewer");
+  val("explorer",page==="pending"?"View wallet activity":s.network==="mainnet"?"View on gram.org":"View on Tonscan");
   let result="Waiting for on-chain confirmation.";
   if(s.retryingSubmission)result="TON Center is busy. Retrying automatically…";
   if(pending?.submissionError)result="Delivery is unconfirmed. "+pending.submissionError;
