@@ -1,0 +1,31 @@
+{
+  "name": "gram-grid",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build --base ./",
+    "lab": "npm run build && node lab.mjs",
+    "pack": "npm run build && evenhub pack app.json dist --sdk-ver 0.0.16 -o gram-grid.ehpk",
+    "serve": "vite preview --host 0.0.0.0 --port 5173 --strictPort"
+  },
+  "dependencies": {
+    "@evenrealities/even_hub_sdk": "0.0.16",
+    "@scure/bip39": "1.6.0",
+    "@ston-fi/api": "0.33.0",
+    "@ston-fi/sdk": "2.7.0",
+    "@ton/core": "0.63.1",
+    "@ton/crypto": "3.3.0",
+    "@ton/ton": "16.3.0",
+    "buffer": "6.0.3",
+    "jsqr": "1.4.0",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@evenrealities/evenhub-cli": "0.2.0",
+    "@evenrealities/evenhub-simulator": "0.9.5",
+    "@ton/sandbox": "0.45.0",
+    "vite": "6.4.6",
+    "vite-plugin-node-polyfills": "0.28.0"
+  }
+}

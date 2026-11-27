@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Even G2 + R1 · Simulator</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:var(--foreground,#222a26);font:15px/1.45 var(--font-sans,"Segoe UI",sans-serif)}main{max-width:940px;margin:auto}header,.modes,.controls,.reading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}header{justify-content:space-between;margin:8px 0 12px}h1{font-size:21px;margin:0;letter-spacing:-.04em}button{cursor:pointer;font:inherit;min-height:44px;border:1px solid var(--border,#b9c1bb);color:inherit;background:transparent;border-radius:8px;padding:6px 13px}button:focus-visible{outline:3px solid #649b3a;outline-offset:2px}.modes{gap:2px}.modes button{font-size:14px}.modes [aria-pressed=true]{background:var(--foreground,#28352d);color:var(--background,#fff)}.stage{position:relative;overflow:hidden;aspect-ratio:1.95;min-height:230px;border-radius:12px;background:radial-gradient(ellipse at 37% 27%,#faf9f3 0,#e9e9df 48%,#ced3c8 100%);isolation:isolate}.stage canvas{width:100%;height:100%;position:absolute;inset:0;touch-action:none;cursor:grab}.stage canvas:active{cursor:grabbing}.pin{position:absolute;transform:translate(-50%,-50%);border:0;padding:6px;min-width:44px;min-height:44px;background:none;color:#1e3220;font:600 12px/1.2 "Segoe UI",sans-serif;white-space:nowrap}.pin span{display:inline-block;border:1px solid #4b6552;border-radius:20px;padding:5px 9px;background:#eef5e8;box-shadow:0 2px 5px #0002}.pin:active span{background:#b9e1a3}.reading{justify-content:space-between;margin-top:12px}.reading h2{font-size:15px;margin:0}.reading small{font-size:12px;color:var(--muted-foreground,#58635a)}.lens{width:100%;height:117px;display:grid;place-items:center;background:#101912;border-radius:10px;margin:7px 0 10px}.lens canvas{width:230px;height:115px}.controls{margin:10px 0}.controls button{font-weight:550}.hint{font-size:13px;color:var(--muted-foreground,#58635a);margin:6px 0}.pov{position:absolute;inset:0;background:#756253 center 48%/cover no-repeat;display:grid;place-items:center}.pov canvas{width:57%;height:auto;position:static;cursor:auto;filter:drop-shadow(0 0 1.4px #28410f)}[hidden]{display:none!important}@media(max-width:480px){header{align-items:flex-start}.stage{min-height:226px}.reading small{font-size:11px}.pov canvas{width:75%}}
+.stage{width:100%}.lens{height:132px;overflow:hidden;grid-template:132px / minmax(0,1fr)}.lens canvas{width:min(100%,470px);height:auto;grid-area:1/1}
+
+.lens{height:auto;aspect-ratio:2;max-width:620px;margin:12px auto;background:#0a120d;grid-template:1fr / minmax(0,1fr);touch-action:none}
+.lens canvas{width:100%;height:auto;image-rendering:pixelated}.controls{justify-content:center}.controls button{min-width:52px;font-size:20px}
+body[data-view="wallet"] .stage,body[data-view="wallet"] #guide{display:none}
+</style></head><body><main>
+<header><h1>Gram Grid</h1><div class="modes" aria-label="View">
+<button id="wallet" aria-pressed="true">Lens</button><button id="outside" aria-pressed="false">Devices</button><button id="inside" aria-pressed="false">First-person view</button>
+</div></header>
+<section class="stage" aria-label="3D device model">
+<canvas id="scene" tabindex="0" aria-label="Drag to rotate. Use the arrow keys to turn the model."></canvas>
+<button id="armPin" class="pin" aria-label="Tap the G2 temple"><span>G2 temple</span></button><button id="ringPin" class="pin" aria-label="Tap the R1 ring"><span>R1 ring</span></button>
+<div class="pov" id="pov" hidden><canvas class="output" width="576" height="288" aria-label="In-lens display"></canvas></div>
+</section>
+<p class="hint" id="guide">Drag to rotate. Tap the marker on the temple or ring.</p>
+<div class="reading"><h2>Lens display</h2><small id="mode">Practice wallet</small></div>
+<div class="lens" tabindex="0" aria-label="Arrow keys to select, Enter to open, Escape to go back"><canvas class="output" width="576" height="288" aria-label="G2 display"></canvas></div>
+<div class="controls"><button id="prev" aria-label="Up" title="Swipe up">↑</button><button id="arm" aria-label="Select" title="Tap the temple or ring">●</button><button id="next" aria-label="Down" title="Swipe down">↓</button><button id="back" aria-label="Back" title="Double tap">↩</button><button id="home" title="Return home">Long Press</button><button id="phone" title="Phone view">Phone</button></div>
+<p class="hint" role="status" id="note">Swipe to select, tap to open, double-tap to go back.</p>
+<div id="companion" hidden><img id="phoneImage" width="240" style="max-width:100%" alt="Phone screen"><p id="phoneNote"></p></div>
+</main>
+<script src="wallet-ui.js"></script>
+<script>
+// Geometry uses a common 3D coordinate system; x is horizontal, y is up.
+const byId = id => document.getElementById(id);
+const scene = byId("scene"), ctx = scene.getContext("2d");
+const armPin = byId("armPin"), ringPin = byId("ringPin");
+let yaw = -.51, pitch = .47, pulse = "", perspective = false;
+const TAU = Math.PI*2;
+function project([x,y,z]){
+  const c=Math.cos(yaw),s=Math.sin(yaw),u=x*c+z*s,v=z*c-x*s;
+  const h=y*Math.cos(pitch)-v*Math.sin(pitch), depth=y*Math.sin(pitch)+v*Math.cos(pitch);
+  const scale=Math.min(scene.clientWidth/5.85,scene.clientHeight/2.65)*7.5/(7.5-depth);
+  return {x:scene.clientWidth*.48+u*scale,y:scene.clientHeight*.52-h*scale,z:depth,k:scale};
+}
+function lens(side,t){
+  const x=Math.sign(Math.cos(t))*Math.pow(Math.abs(Math.cos(t)),.79);
+  const y=Math.sign(Math.sin(t))*Math.pow(Math.abs(Math.sin(t)),.83);
+  return [side*.81+x*(.685+.064*y),.21+y*.49+side*x*.045,.66-.12*x*x];
+}
+const armDot=side=>[side*1.49,-.01,-1.49];
+const ringCenter=[2.06,-.25,.12];
+function ringPoint(t,r,w){
+  const x=Math.cos(t)*r,y=Math.sin(t)*r;
+  return [ringCenter[0]+.79*x+.61*w,ringCenter[1]+y+.09*x,ringCenter[2]-.61*x+.79*w];
+}
+function draw(){
+  if(perspective)return;
+  const w=scene.clientWidth,h=scene.clientHeight;if(!w||!h)return;
+  const px=Math.min(window.devicePixelRatio||1,2);
+  scene.width=Math.round(w*px);scene.height=Math.round(h*px);ctx.setTransform(px,0,0,px,0,0);
+  const parts=[];
+  function poly(pts,fill){const p=pts.map(project);parts.push({z:p.reduce((sum,a)=>sum+a.z,0)/p.length,paint(){ctx.beginPath();p.forEach((a,i)=>i?ctx.lineTo(a.x,a.y):ctx.moveTo(a.x,a.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();}});}
+  function line(a,b,width,color){
+    const p=project(a),q=project(b);
+    parts.push({z:(p.z+q.z)/2,paint(){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.lineWidth=Math.max(.5,width*(p.k+q.k)/2);ctx.lineCap="round";ctx.strokeStyle=color;ctx.stroke();}});
+  }
+  function shadow(x,y,rx,ry){ctx.save();ctx.translate(x,y);ctx.scale(rx,ry);const grad=ctx.createRadialGradient(0,0,0,0,0,1);grad.addColorStop(0,"#50594938");grad.addColorStop(1,"#50594900");ctx.fillStyle=grad;ctx.fillRect(-1,-1,2,2);ctx.restore();}
+  shadow(w*.47,h*.73,w*.37,h*.12);
+  const r=project(ringCenter);shadow(r.x,r.y+r.k*.27,r.k*.42,r.k*.09);
+  for(const side of [-1,1]){
+    const rim=Array.from({length:72},(_,i)=>lens(side,TAU*i/72));
+    poly(rim,"rgba(152,196,181,.16)");
+    for(let i=0;i<rim.length;i++){
+      const a=rim[i],b=rim[(i+1)%rim.length];
+      line(a,b,.053,a[1]>.43?"#202823":"#586059");
+    }
+    const arm=[[side*1.48,.35,.55],[side*1.56,.34,.16],[side*1.57,.29,-.60],[side*1.54,.23,-1.06],[side*1.5,.11,-1.32],armDot(side),[side*1.43,-.17,-1.70]];
+    for(let i=1;i<arm.length;i++){
+      line(arm[i-1],arm[i],i>=5?.135:.079,i>=5?"#2a302a":"#3c443e");
+      line(arm[i-1].map((v,j)=>v+(j===1?.023:.006)),arm[i].map((v,j)=>v+(j===1?.023:.006)),.015,"#879084");
+    }
+    line([side*.19,.12,.62],[side*.24,-.05,.52],.023,"#858e83");
+    line([side*.24,-.05,.52],[side*.26,-.14,.50],.071,"#aab6a7");
+    line([side*.15,.28,.65],[side*.08,.34,.69],.046,"#333b34");
+    line([side*.08,.34,.69],[0,.35,.70],.046,"#424b43");
+  }
+  const profile=[[.247,-.095],[.267,-.074],[.273,.066],[.251,.095],[.205,.095],[.193,.077],[.193,-.076],[.207,-.095]];
+  for(let i=0;i<72;i++){
+    const a=i/72*TAU,b=(i+1)/72*TAU;
+    profile.forEach(([rad,d],j)=>{
+      const [next,e]=profile[(j+1)%profile.length];
+      const l=Math.round((j>=4?36:81)+(j>=4?16:46)*Math.cos(a+yaw+1.1)+(j===2?38:0));
+      poly([ringPoint(a,rad,d),ringPoint(b,rad,d),ringPoint(b,next,e),ringPoint(a,next,e)],"rgb("+l+","+(l+5)+","+l+")");
+    });
+  }
+  parts.sort((a,b)=>a.z-b.z).forEach(p=>p.paint());
+  const a=project(armDot(yaw<0?-1:1)), b=project(ringPoint(-1,.27,.01));
+  function pin(el,p,dx,dy,key){
+    const x=Math.min(w-40,Math.max(40,p.x+dx)),y=Math.min(h-24,Math.max(24,p.y+dy));
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(x,y);ctx.strokeStyle="#486a4b";ctx.lineWidth=1;ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x,p.y,pulse===key?7:3,0,TAU);ctx.fillStyle=pulse===key?"#62bf40":"#526f49";ctx.fill();
+    el.style.left=x+"px";el.style.top=y+"px";
+  }
+  pin(armPin,a,-16,-35,"arm");pin(ringPin,b,0,36,"ring");
+}
+let drag, origin;
+scene.onpointerdown=e=>{scene.focus();origin=drag=[e.clientX,e.clientY];scene.setPointerCapture(e.pointerId);};
+scene.onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-drag[0])*.012;pitch=Math.max(-.55,Math.min(1.18,pitch+(e.clientY-drag[1])*.008));drag=[e.clientX,e.clientY];draw();};
+scene.onpointerup=e=>{
+  drag=null;if(!origin || Math.hypot(e.clientX-origin[0],e.clientY-origin[1])>5)return;
+  const rect=scene.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const near=(point,radius)=>{const p=project(point);return Math.hypot(p.x-x,p.y-y)<Math.max(17,p.k*radius);};
+  if(near(ringCenter,.34))tap("ring");
+  else if(near(armDot(-1),.26)||near(armDot(1),.26))tap("arm");
+};
+scene.onpointercancel=()=>{origin=drag=null;};
+scene.onkeydown=e=>{if(!e.key.startsWith("Arrow"))return;e.preventDefault();yaw+=e.key==="ArrowLeft"?-.16:e.key==="ArrowRight"?.16:0;pitch=Math.max(-.55,Math.min(1.18,pitch+(e.key==="ArrowUp"?.10:e.key==="ArrowDown"?-.10:0)));draw();};
+new ResizeObserver(draw).observe(scene);
+function setView(first, walletOnly=false){
+  document.body.dataset.view=walletOnly?"wallet":"devices";byId("wallet").setAttribute("aria-pressed",walletOnly);
+  perspective=first;byId("inside").setAttribute("aria-pressed",first);byId("outside").setAttribute("aria-pressed",!first&&!walletOnly);
+  byId("pov").hidden=!first;armPin.hidden=ringPin.hidden=first;scene.hidden=first;
+  byId("guide").textContent=first?"Only the wearer sees the green display. The background and projection size are illustrative.":"Drag to rotate. Tap the marker on the temple or ring.";
+  if(!first)draw();
+}
+byId("inside").onclick=()=>setView(true);byId("outside").onclick=()=>setView(false);byId("wallet").onclick=()=>setView(false,true);
+byId("pov").style.backgroundImage="linear-gradient(155deg,#34453a,#152018 65%,#27372b)";
+const outputs=[...document.querySelectorAll(".output")];
+function show(src){return new Promise((resolve,reject)=>{
+  const im=new Image();im.onload=()=>{for(const c of outputs){const g=c.getContext("2d");g.clearRect(0,0,576,288);g.drawImage(im,0,0);g.globalCompositeOperation="source-in";g.fillStyle="#b7ff90";g.fillRect(0,0,576,288);g.globalCompositeOperation="source-over";}resolve();};im.onerror=reject;im.src=src;
+});}
+const live=location.origin==="http://127.0.0.1:5186";
+const ui=globalThis.GramGrid,state=ui.create();
+function offlinePaint(){for(const c of outputs)ui.draw(c,state,"#b7ff90");}
+let work=Promise.resolve(),busy=false;
+async function refresh(){
+  const res=await fetch("/frame",{cache:"no-store"});if(!res.ok)throw Error();
+  const url=URL.createObjectURL(await res.blob());try{await show(url);}finally{URL.revokeObjectURL(url);}
+}
+function tap(key,gesture="click"){work=work.then(()=>act(key,gesture));}
+async function act(key,gesture){
+  busy=true;pulse=key;draw();
+  try{
+    if(live){
+      const res=await fetch(gesture==="click"?"/tap":"/"+gesture,{method:"POST",headers:{"x-lab":"tap"}});if(!res.ok)throw Error();
+      await new Promise(r=>setTimeout(r,220));await refresh();
+    } else {
+      const effect=gesture==="home"?ui.enter(state,"home"):ui.apply(state,gesture);
+      if(typeof effect==="number")ui.adjustSend(state,effect);
+      if(effect==="chooseCurrency"){state.sendAsset=state.option?"USDT":"GRAM";state.sendUnits=0n;ui.enter(state,"sendAmount");}
+      if(effect==="chooseRecipient"&&state.sendUnits>0n)ui.enter(state,"recipient");
+      if(effect==="pickContact")ui.enter(state,"contacts");
+      if(["manual","camera","quote","contact","handoff"].includes(effect)){ui.enter(state,"phone");byId("note").textContent="Continue in the phone app.";}
+      offlinePaint();
+    }
+    if(!byId("companion").hidden)updatePhone();
+  }catch{byId("note").textContent="Simulator unavailable. Restart npm run lab.";}
+  finally{busy=false;setTimeout(()=>{pulse="";draw();},200);}
+}
+function updatePhone(){
+  const img=byId("phoneImage"), note=byId("phoneNote");
+  img.hidden=!live;
+  if(live)img.src="/phone-frame?t="+Date.now();
+  note.textContent=live?"App screen in the simulator.":"The QR code appears on the phone once a wallet is connected.";
+}
+byId("phone").onclick=()=>{byId("companion").hidden=!byId("companion").hidden;if(!byId("companion").hidden)updatePhone();};
+byId("arm").onclick=()=>tap("arm");armPin.onclick=()=>tap("arm");ringPin.onclick=()=>tap("ring");
+for(const id of ["prev","next","back","home"])byId(id).onclick=()=>tap("ring",id);
+for(const el of [armPin,ringPin,document.querySelector(".lens")]){
+  let start,wasSwipe=false,holdTimer;
+  el.style.touchAction="none";
+  el.addEventListener("pointerdown",e=>{start=[e.clientX,e.clientY];wasSwipe=false;el.setPointerCapture(e.pointerId);holdTimer=setTimeout(()=>{wasSwipe=true;start=null;tap("ring","home");},800);});
+  el.addEventListener("pointermove",e=>{if(start&&Math.hypot(e.clientX-start[0],e.clientY-start[1])>18)clearTimeout(holdTimer);});
+  el.addEventListener("pointerup",e=>{clearTimeout(holdTimer);if(!start)return;const dx=e.clientX-start[0],dy=e.clientY-start[1];start=null;const shift=Math.abs(dx)>Math.abs(dy)?dx:dy;if(Math.abs(shift)>18){wasSwipe=true;tap(el===armPin?"arm":"ring",shift>0?"next":"prev");}});
+  el.addEventListener("pointercancel",()=>{clearTimeout(holdTimer);start=null;});
+  let timer;
+  el.addEventListener("click",e=>{e.stopImmediatePropagation();if(wasSwipe){wasSwipe=false;return;}clearTimeout(timer);
+    if(e.detail>=2)tap("ring","back");else timer=setTimeout(()=>tap(el===armPin?"arm":"ring"),240);
+  },true);
+}
+document.addEventListener("keydown",e=>{if(e.target===scene||e.altKey||e.ctrlKey||e.metaKey)return;
+  const cmd={ArrowLeft:"prev",ArrowUp:"prev",ArrowRight:"next",ArrowDown:"next",Escape:"back",Enter:"click"}[e.key];
+  if(!cmd||(e.key==="Enter"&&e.target.tagName==="BUTTON"))return;e.preventDefault();tap("ring",cmd);
+});
+if(live){
+  byId("mode").textContent="Even Hub SDK · Live simulator";
+  const poll=()=>{if(!busy)refresh().catch(()=>{byId("note").textContent="Waiting for the simulator…";});};poll();setInterval(poll,900);
+}else offlinePaint();
+setView(false,true);
+</script></body></html>

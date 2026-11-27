@@ -1,0 +1,16 @@
+{
+  "package_id": "dev.g2lab.hellotap",
+  "edition": "202601",
+  "name": "Gram Grid",
+  "version": "0.4.0",
+  "min_app_version": "2.2.10",
+  "min_sdk_version": "0.0.16",
+  "entrypoint": "index.html",
+  "permissions": [
+    {"name":"camera","desc":"Scan a TON payment QR with the phone camera."},
+    {"name":"network","desc":"Read TON balances and prices, request swaps and submit signed transfers.","whitelist":["https://toncenter.com","https://testnet.toncenter.com","https://api.ston.fi","https://api.coingecko.com"]}
+  ],
+  "supported_languages": [
+    "en"
+  ]
+}

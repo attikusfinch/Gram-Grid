@@ -1,0 +1,44 @@
+.phone-screen {
+  --surface: #191d1c;
+  --control: #242c28;
+  --stroke: #48564e;
+  --ink: #edf3ef;
+  --muted: #bbc7bf;
+  --mint: #b1f3c3;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0,1fr) auto;
+  gap: 12px;
+  color: var(--ink);
+  text-align: center;
+}
+.screen-head { display: grid; gap: 5px; justify-items: center; }
+.screen-head canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.screen-head h1, .screen-head h2 { font: 650 24px/1.16 system-ui,sans-serif; letter-spacing: -.035em; margin: 0; }
+.screen-body { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable both-edges; overflow-wrap: anywhere; }
+.screen-actions { display: grid; gap: 4px; }
+.screen-actions:empty, .screen-actions:not(:has(> :not([hidden]))) { display: none; }
+.phone-screen .screen-actions :is(button,a), .phone-screen .screen-body button {
+  width: 100%; min-height: 44px; margin: 0; border-radius: 9px;
+  font: 550 15px/1.3 system-ui,sans-serif; padding: 9px 10px;
+}
+.phone-screen .screen-actions .primary {
+  min-height: 48px; background: var(--mint); border: 0; color: #14281b; font-weight: 680;
+}
+.phone-screen .screen-actions .quiet {
+  background: transparent; border: 1px solid transparent; color: var(--muted);
+}
+.phone-screen .screen-body label { display: grid; gap: 5px; color: var(--muted); font-size: 14px; }
+.phone-screen :is(input,select) { min-width: 0; width: 100%; min-height: 46px; font: inherit; font-size: 16px; text-align: center; }
+.phone-screen .screen-body input { background: #111713; }
+.phone-screen .readout { font: 650 clamp(27px,7vw,36px)/1.15 system-ui,sans-serif; letter-spacing: -.035em; font-variant-numeric: tabular-nums; margin: 8px 0; }
+.phone-screen .ledger { display: grid; gap: 0; margin: 10px 0; }
+.phone-screen .ledger-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: center; gap: 8px; border-bottom: 1px solid #34413a; padding: 9px 0; font-size: 14px; white-space: normal; }
+.ledger-row span { color: var(--muted); }
+.ledger-row strong { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.phone-screen .asset-picker { display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; gap: 6px; }
+.phone-screen .asset-picker :is(select,output) { text-align: center; font: 650 18px/1.35 system-ui,sans-serif; color: var(--ink); }
+.phone-screen .asset-picker select { appearance: none; cursor: pointer; }
+.phone-screen .asset-picker button { font-size: 22px; line-height: 1; padding: 0; }

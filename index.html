@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gram Grid</title><link rel="stylesheet" href="./phone.css"><link rel="stylesheet" href="./phone-pixels.css"></head>
+<body><main class="pixel-wallet"><header><strong><i aria-hidden="true">⠿</i> Gram Grid</strong><select id="network" aria-label="Network"><option value="mainnet">Mainnet</option><option value="testnet">Testnet</option></select></header>
+<dialog id="setup" aria-labelledby="setup-title"><div class="setup-inner"><span id="setup-icon" aria-hidden="true">⠿</span><h2 id="setup-title" tabindex="-1">Gram Grid</h2>
+<div id="stage-welcome"><button type="button" class="primary" id="make">Create</button><button type="button" id="recover-new">Import</button></div>
+<div id="stage-backup" hidden><p>Write the words on paper in order. Anyone with this phrase can access your funds. Choose a password to unlock your wallet on this phone.</p><ol id="words"></ol></div>
+<form id="setup-form" autocomplete="off"><div id="stage-verify" hidden><p>Choose the word in each numbered position.</p><div id="word-check"></div></div>
+<div id="stage-recover" hidden><p>Enter your 12 words in order, or paste the full phrase into any box.</p><fieldset id="recovery" aria-label="Recovery words" disabled></fieldset></div>
+<div id="stage-unlock" hidden><p>Your password unlocks signing on your phone and with your ring.</p><button type="button" id="recover-saved">Recover with your phrase</button></div>
+<div id="pass-fields" hidden><label><span id="password-label">Create a device password</span><input type="password" id="password" maxlength="256" aria-describedby="password-help"></label><p id="password-help"></p><label id="repeat-label">Confirm password<input type="password" id="repeat" autocomplete="new-password" maxlength="256"></label></div>
+</form></div><div class="setup-footer">
+<p id="setup-message" role="status"></p><button id="setup-submit" form="setup-form" type="submit" class="primary" hidden>Save wallet</button><button type="button" id="setup-cancel">Close</button></div></dialog>
+<div class="phone-screen" id="mobile-screen">
+<div class="screen-head"><canvas id="page-icon" width="64" height="64" aria-hidden="true"></canvas><h1 id="title">Wallet</h1></div>
+<div class="screen-body" id="page-content"><div id="account"><p id="who"></p><output id="home-value" class="readout"></output></div>
+<nav id="menu" aria-label="Actions"></nav>
+
+<section id="balance" hidden><p class="label">Balance in USD</p><output id="usd" class="big">—</output><p class="line">GRAM <b id="gram">—</b></p><p class="line" id="usdt-row">USDT <b id="usdt">—</b></p></section>
+<section id="receive" hidden><div id="qrbox" hidden><img id="qr" width="220" height="220" alt="QR code for your wallet address"></div><p id="address" class="address"></p><p id="income"></p></section>
+<section id="send" hidden><label for="asset">Choose currency</label><div class="asset-picker"><button type="button" id="asset-prev" aria-label="Previous currency">←</button><select id="asset"><option>GRAM</option><option>USDT</option></select><button type="button" id="asset-next" aria-label="Next currency">→</button></div></section>
+<section id="sendAmount" hidden><label for="amount" id="amount-label">Amount</label><div class="asset-picker"><button type="button" id="amount-prev" aria-label="Subtract 0.1">−</button><input id="amount" inputmode="decimal" autocomplete="off" value="0"><button type="button" id="amount-next" aria-label="Add 0.1">+</button></div><button type="button" id="amount-max">Max</button></section>
+<section id="recipient" hidden><p class="readout" id="send-summary"></p><button type="button" id="recipient-contact">Choose contact</button><form id="transfer"><label>Recipient<input id="to" required autocomplete="off" spellcheck="false" placeholder="TON address"></label><label>Comment<input id="memo" maxlength="120" placeholder="Optional note for the recipient"></label></form><label class="file">Scan QR from photo<input type="file" id="file" accept="image/*" capture="environment"></label></section>
+<section id="swap" hidden><label for="direction">Swap direction</label><div class="asset-picker"><button type="button" id="direction-prev" aria-label="Previous direction">←</button><select id="direction"><option value="GRAM">GRAM → USDT</option><option value="USDT">USDT → GRAM</option></select><button type="button" id="direction-next" aria-label="Next direction">→</button></div><p>STON.fi · Slippage tolerance 0.5%</p></section>
+<section id="history" hidden><ul id="activity"></ul></section>
+<section id="contacts" hidden><ul id="people"></ul><form id="save"><label>Name<input id="name" required maxlength="40"></label><label>TON address<input id="contactAddress" required autocomplete="off"></label></form></section>
+<section id="review" hidden><p class="label" id="kind"></p><output id="total" class="big"></output><p id="details" class="address"></p><p id="fee"></p></section>
+<section id="tracking" hidden><p id="result"></p><a id="explorer" hidden rel="noopener noreferrer" target="_blank">View in explorer</a></section>
+<p id="status" role="status"></p></div>
+<footer class="screen-actions">
+<button type="button" id="connect" class="primary">Create or restore wallet</button>
+<button type="button" id="choose-currency" data-page="send" class="primary" hidden>Continue</button>
+<button type="button" id="choose-recipient" data-page="sendAmount" class="primary" hidden>Choose recipient</button>
+<button type="submit" form="transfer" id="check-transfer" data-page="recipient" class="primary" hidden>Review transfer</button>
+<button type="button" id="choose-direction" data-page="swap" class="primary" hidden>Continue</button>
+<button type="submit" form="save" data-page="contacts" class="primary" hidden>Save contact</button>
+<button id="copy" data-page="receive" class="primary" disabled hidden>Copy address</button>
+<button id="share" data-page="receive" disabled hidden>Share</button>
+<button id="sign" data-page="review" class="primary" hidden>Sign and send</button>
+<button id="cancel" data-page="review" class="quiet" hidden>Cancel</button>
+<button id="resume" hidden>View pending transaction</button>
+<button id="dismiss" class="quiet" hidden>Dismiss from pending</button>
+<button id="back" class="quiet" hidden>Back to menu</button>
+</footer></div></main><script type="module" src="./wallet.js"></script></body></html>
