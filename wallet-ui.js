@@ -124,7 +124,11 @@
       text(s.option?"Cancel":tx.other?"Confirm swap":"Confirm transfer",269,26);return;
     }
     if(s.screen==="error"){symbol("warning",288,94,5);text(s.error,188);return;}
-    if(["phone","sign","pending"].includes(s.screen)){symbol(s.screen==="pending"?"history":"phone",288,128,6);return;}
+    if(s.screen==="pending"){
+      symbol("history",288,100,6);
+      text("Transaction pending",205,30);return;
+    }
+    if(s.screen==="phone"||s.screen==="sign"){symbol("phone",288,128,6);return;}
     if(s.screen==="done"){symbol("check",288,110,6);return;}
     symbol(s.screen,288,58,4);
     switch(s.screen){
