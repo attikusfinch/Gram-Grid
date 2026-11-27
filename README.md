@@ -1,8 +1,25 @@
-# Gram Grid
+<p align="center">
+  <img src="./gram-grid.svg" width="96" height="96" alt="">
+</p>
 
-A TON wallet for **Even G2 glasses and the R1 ring**. Pick a contact, set an amount with a swipe, and review the transfer in the lens. Your phone holds the encrypted signing key and shows the QR code when someone wants to pay you.
+<h1 align="center">Gram Grid</h1>
 
-![Two Gram Grid lens screens. The home grid has Send selected. The swap screen shows 1.5 USDT to exchange for GRAM.](docs/lens-preview.png)
+<p align="center"><strong>A TON wallet for Even G2 glasses and the R1 ring.</strong></p>
+
+<p align="center">
+  Pick a contact, swipe to set the amount, and review the transfer in your glasses.<br>
+  Your phone holds the encrypted signing key and displays your QR code for incoming payments.
+</p>
+
+<p align="center">
+  <a href="#try-it-without-glasses">Run the emulator</a> ·
+  <a href="#inside-the-grid">Explore the grid</a> ·
+  <a href="#ring-and-temple-controls">Learn the gestures</a>
+</p>
+
+<p align="center">
+  <img src="./docs/lens-preview.png" width="840" alt="Two views through the glasses. On the left, Send is selected in the six-icon grid. On the right, the swap amount is set to 1.5 USDT.">
+</p>
 
 ## Try it without glasses
 
@@ -13,9 +30,13 @@ npm ci
 npm run lab
 ```
 
-Open the [phone and virtual glasses side by side](http://127.0.0.1:5186/app/?emulator=1). The same command starts the official Even Hub simulator. Its phone window pairs with the [3D glasses and ring view](http://127.0.0.1:5186/). Each environment keeps its own wallet.
+Open the phone and virtual glasses side by side in your browser. The command also starts the official Even Hub simulator, whose phone window pairs with the 3D glasses and ring view. Each environment keeps its own wallet. [Browser emulator](http://127.0.0.1:5186/app/?emulator=1) · [3D glasses and ring](http://127.0.0.1:5186/)
 
-**First run.** Mainnet is selected by default and uses real funds. For a practice run, select **Testnet** on the phone, choose **Create**, write down the 12 words, then confirm the three requested words. The lens switches from the setup prompt to the six-icon grid. Open **Send**, tap to choose GRAM, and swipe **Up** twice to see **0.2 GRAM**. Hold to return home. This walkthrough requires no funds.
+**First run**
+
+1. Switch the phone to **Testnet** for practice. The default, **Mainnet**, uses real funds.
+2. Choose **Create**, write down your 12 recovery words, set a device password, and confirm the three requested words. The six-icon grid appears in the glasses.
+3. Open **Send**, tap to choose GRAM, and swipe **Up** twice. The lens shows **0.2 GRAM**. Long-press to return home. You can try this gesture sequence with an empty wallet.
 
 ## Inside the grid
 
@@ -25,8 +46,8 @@ Open the [phone and virtual glasses side by side](http://127.0.0.1:5186/app/?emu
 | **Receive** | The glasses show a shortened address and prompt you to show the QR code on your phone. You can also share the address from the phone. The same TON address accepts both assets on Mainnet. |
 | **Swap** | Exchange GRAM and USDT through STON.fi. Review the estimated output, minimum received, and quote expiry before confirming. |
 | **Balance** | Check both holdings and their combined USD estimate. Balances come from TON Center and prices from CoinGecko. |
-| **History** | Browse finalized transfers for the current address. |
-| **Contacts** | Add a name and address on the phone, then select that person in the lens. Each network has its own address book. |
+| **History** | Swipe through finalized transfers. Each entry shows the amount, date, and sender or recipient. |
+| **Contacts** | Save a name and address on the phone. Pick that contact from the grid, choose a currency and amount, and go straight to review. Each network has its own address book. |
 
 **Network support.** Mainnet supports GRAM, USDT on TON, and swaps in both directions. Testnet supports native GRAM transfers. The same recovery phrase derives a different address on each network.
 
@@ -55,8 +76,10 @@ The amount menu starts with **Max**, followed by **−0.1, −1, −10, +0.1, +1
 ## Build and test
 
 ```sh
-node --test local-wallet.test.js
+node --test chain.test.js local-wallet.test.js
 npm run pack
 ```
 
-The test runs in a local TON Sandbox. It restores a wallet, deploys its V5R1 contract with the first payment, and verifies a second payment. The build produces **`gram-grid.ehpk`** for Even Hub SDK 0.0.16. To run it on hardware, pair your G2 with Even App 2.2.10 or later and install the package through Even Hub. [Local installation guide](https://hub.evenrealities.com/docs/test/local-testing) · [Official simulator guide](https://hub.evenrealities.com/docs/test/simulator)
+The tests cover wallet recovery, first and subsequent payments in TON Sandbox, and retries when TON Center rate-limits a submission.
+
+The build produces **`gram-grid.ehpk`** for Even Hub SDK 0.0.16. To run it on hardware, pair your G2 with Even App 2.2.10 or later and install the package through Even Hub. [Local installation guide](https://hub.evenrealities.com/docs/test/local-testing) · [Official simulator guide](https://hub.evenrealities.com/docs/test/simulator)
