@@ -87,6 +87,7 @@ export function phone(s,context){
   if(link)el("explorer").href=link;
   val("explorer",page==="pending"?"View wallet activity":"View on Tonviewer");
   let result="Waiting for on-chain confirmation.";
+  if(s.retryingSubmission)result="TON Center is busy. Retrying automatically…";
   if(pending?.submissionError)result="Delivery is unconfirmed. "+pending.submissionError;
   if(expired)result="The signing window has expired. Checking whether the request reached the chain.";
   el("result").hidden=page==="done";

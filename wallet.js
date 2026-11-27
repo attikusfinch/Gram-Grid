@@ -71,7 +71,7 @@ function requireWallet(){
   if(!local.unlocked())throw Error("Unlock your wallet on your phone.");
 }
 async function refresh(){
-  if(!s.address||reading===epoch)return;
+  if(!s.address||reading===epoch||s.retryingSubmission)return;
   const generation=epoch,owner=s.address,network=s.network,record=pending;
   reading=generation;
   try{
@@ -265,7 +265,11 @@ async function sign(){
       const rec={id:crypto.randomUUID(),time:now(),expires:tx.expires,asset:tx.asset,units:String(tx.units),other:tx.other,minimum:tx.other?String(tx.minimum):null,address:tx.address,memo:tx.memo||"",hash:messageHash(boc)};
       localStorage.setItem(storageKey,JSON.stringify(rec));
       pending=rec;receipt="";page("pending");
-      try{await broadcast(network,boc);}
+      try{
+        await broadcast(network,boc,rec.expires,()=>{
+          if(generation===epoch&&pending?.id===rec.id){s.retryingSubmission=true;render();}
+        });
+      }
       catch(e){
         if(generation!==epoch||pending?.id!==rec.id)return;
         if(e.rejected){
@@ -274,7 +278,7 @@ async function sign(){
         }
         rec.submissionError=e.message||"Network connection lost.";
         if(stored(storageKey,null)?.id===rec.id)localStorage.setItem(storageKey,JSON.stringify(rec));
-      }
+      }finally{s.retryingSubmission=false;}
       void refresh();
     });
   }catch(e){if(revision===s.revision)throw e;}

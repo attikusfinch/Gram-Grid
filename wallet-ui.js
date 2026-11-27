@@ -127,7 +127,9 @@
     if(s.screen==="error"){symbol("warning",288,94,5);text(s.error,188);return;}
     if(s.screen==="pending"){
       symbol("history",288,100,6);
-      text("Transaction pending",205,30);return;
+      text("Transaction pending",205,30);
+      if(s.retryingSubmission)text("Retrying automatically…",247,22);
+      return;
     }
     if(s.screen==="phone"||s.screen==="sign"){symbol("phone",288,128,6);return;}
     if(s.screen==="done"){

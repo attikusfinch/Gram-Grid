@@ -39,11 +39,17 @@ export function friendly(value,network){
 export const same=(a,b)=>Boolean(a&&b&&Address.parse(a).equals(Address.parse(b)));
 // The public TON Center endpoint shares one request slot across reads and sends.
 const nextSlot=new Map();
-async function centerFetch(url,options={}){
+async function centerFetch(url,options={},deadline=Infinity){
   const origin=new URL(url).origin,time=Date.now();
   const start=Math.max(time,nextSlot.get(origin)??0);
   nextSlot.set(origin,start+1200);
-  if(start>time)await new Promise(resolve=>setTimeout(resolve,start-time));
+  const waitUntil=Math.min(start,deadline);
+  if(waitUntil>time)await new Promise(resolve=>setTimeout(resolve,waitUntil-time));
+  if(Date.now()>=deadline){
+    const error=Error("The signing window expired before submission. Review the request again.");
+    error.rejected=true;
+    throw error;
+  }
   return fetch(url,{...options,signal:AbortSignal.timeout(12000)});
 }
 async function get(net,route,params){
@@ -76,14 +82,29 @@ export async function signingState(network,address){
   if(!Array.isArray(reply.wallets))throw Error("TON Center did not return the wallet state.");
   return reply.wallets.find(row=>same(row.address,address))??{status:"nonexist"};
 }
-export async function broadcast(network,boc){
-  const response=await centerFetch(networks[network].base+"/api/v3/message",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({boc})});
-  if(response.ok)return;
-  const body=await response.json().catch(()=>null);
-  const reason=String(body?.error||body?.result||response.statusText).slice(0,300);
-  const error=Error("TON Center HTTP "+response.status+" · "+reason);
-  error.rejected=[401,403,422,429].includes(response.status);
-  throw error;
+export async function broadcast(network,boc,expires,onRateLimit){
+  if(!Number.isSafeInteger(expires))throw Error("Missing signing deadline.");
+  const deadline=expires*1000;
+  const url=networks[network].base+"/api/v3/message";
+  const request={method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({boc})};
+  let backoff=2000;
+  for(;;){
+    const response=await centerFetch(url,request,deadline);
+    if(response.ok)return;
+    if(response.status!==429){
+      const body=await response.json().catch(()=>null);
+      const reason=String(body?.error||body?.result||response.statusText).slice(0,300);
+      const error=Error("TON Center HTTP "+response.status+" · "+reason);
+      error.rejected=[401,403,422].includes(response.status);
+      throw error;
+    }
+    const header=response.headers.get("Retry-After")?.trim();
+    const serverDelay=/^\d+$/.test(header)?Number(header)*1000:Date.parse(header)-Date.now();
+    const delay=Math.min(Math.max(backoff,serverDelay||0),Math.max(0,deadline-Date.now()));
+    onRateLimit?.();
+    await new Promise(resolve=>setTimeout(resolve,delay));
+    backoff=Math.min(backoff*2,16000);
+  }
 }
 export async function expiredBeforeDeployment(network,owner,record){
   if(!record.expires||Date.now()/1000<=record.expires+30)return false;
