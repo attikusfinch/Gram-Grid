@@ -49,7 +49,38 @@ export function phoneWallet(onChange){
     input.lang="en";input.autocomplete="off";input.autocapitalize="none";input.spellcheck=false;input.required=true;
     label.append(input);by("recovery").append(label);return input;
   });
-  by("recovery").addEventListener("paste",e=>{
+  const recovery=by("recovery");
+  function focusPreviousWord(input){
+    let i=recoveryWords.indexOf(input)-1;
+    if(i<0)return;
+    while(i>0&&!recoveryWords[i].value)i--;
+    const previous=recoveryWords[i];
+    previous.focus();
+    previous.setSelectionRange(previous.value.length,previous.value.length);
+    return previous;
+  }
+  function backspaceFromEmpty(e){
+    const input=e.target;
+    if(!e.cancelable||e.isComposing||input.value!==""||!recoveryWords.includes(input))return;
+    const previous=focusPreviousWord(input);
+    if(!previous)return;
+    e.preventDefault();
+    const end=previous.value.length;
+    if(end){
+      previous.setRangeText("",end-1,end,"end");
+      if(!previous.value)focusPreviousWord(previous);
+    }
+  }
+  recovery.addEventListener("keydown",e=>{
+    if(e.key==="Backspace"&&!e.ctrlKey&&!e.altKey&&!e.metaKey)backspaceFromEmpty(e);
+  });
+  recovery.addEventListener("beforeinput",e=>{
+    if(e.inputType==="deleteContentBackward")backspaceFromEmpty(e);
+  });
+  recovery.addEventListener("input",e=>{
+    if(e.inputType==="deleteContentBackward"&&!e.isComposing&&e.target.value==="")focusPreviousWord(e.target);
+  });
+  recovery.addEventListener("paste",e=>{
     const list=e.clipboardData.getData("text").trim().split(/\s+/);
     if(list.length<2)return;
     e.preventDefault();
