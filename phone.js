@@ -4,6 +4,10 @@ const val=(id,value)=>el(id).textContent=value;
 const panels=["balance","receive","send","sendAmount","recipient","swap","history","contacts","review","tracking"];
 const titles={home:"Wallet",send:"Send",receive:"Receive",swap:"Swap",balance:"Balance",history:"History",contacts:"Contacts",review:"Review",sign:"Sign",pending:"Pending",done:"Confirmed",error:"Error"};
 export function menu(open){
+  for(const [id,icon] of [["recipient-contact","contacts"],["pick-qr","qr"]]){
+    const canvas=el(id).querySelector("canvas");
+    ui.icon(canvas.getContext("2d"),icon,16,16,2,"#b7ff90");
+  }
   ui.actions.forEach((action,i)=>{
     const button=document.createElement("button"),canvas=document.createElement("canvas");
     canvas.width=64;canvas.height=64;ui.icon(canvas.getContext("2d"),action,32,32,4,"#b7ff90");
@@ -48,7 +52,7 @@ export function phone(s,context){
     const value=s.amountText??ui.amount(s.sendUnits,s.sendAsset);
     if(el("amount").value!==value)el("amount").value=value;
     val("choose-recipient",s.swapDraft?"Get quote":"Choose recipient");
-    el("choose-recipient").disabled=s.sendUnits===0n||busy||Boolean(pending);
+    el("choose-recipient").disabled=s.sendUnits===0n||busy;
     el("amount").disabled=busy;
   }
   if(page==="recipient")val("send-summary",ui.amount(s.sendUnits,s.sendAsset)+" "+s.sendAsset);
@@ -67,8 +71,8 @@ export function phone(s,context){
     row.append(date,amount);return row;
   });
   list("people",s.contacts,"No contacts yet",c=>{const b=document.createElement("button");b.textContent=c.name+" · "+c.address.slice(-7);b.onclick=()=>chooseContact(c);return b;});
-  el("check-transfer").disabled=busy||Boolean(pending);
-  el("choose-direction").disabled=s.network!=="mainnet"||busy||Boolean(pending);
+  el("check-transfer").disabled=busy;
+  el("choose-direction").disabled=s.network!=="mainnet"||busy;
   if(s.invoice && section==="review"){
     const t=s.invoice;val("kind",t.other?"Swap via STON.fi":"Transfer");
     val("total",ui.amount(t.units,t.asset)+" "+t.asset);
@@ -76,9 +80,15 @@ export function phone(s,context){
     val("fee","Network "+s.network+" · Message amount "+ui.amount(BigInt(t.message.amount),"GRAM")+" GRAM. A separate network fee applies.");
   }
   el("sign").disabled=busy||Boolean(pending)||!s.address||!context.unlocked;
-  el("dismiss").hidden=page!=="pending"||busy;
-  el("explorer").hidden=!receipt||page!=="done";
-  if(receipt)el("explorer").href=receipt;
-  val("result",page==="error"?s.error:page==="done"?"Transaction confirmed on-chain.":"Checking the transaction with TON Center.");
-  val("status",(page==="sendAmount"&&s.amountNote)||s.message||(s.address&&!context.unlocked?"Unlock your wallet on your phone to send funds.":"")||(s.network==="testnet"&&page==="swap"?"The GRAM/USDT pair is available on Mainnet.":""));
+  const expired=pending?.expires<=Date.now()/1000;
+  el("dismiss").hidden=page!=="pending"||busy||!expired;
+  const link=page==="pending"?context.walletExplorer:page==="done"?receipt:"";
+  el("explorer").hidden=!link;
+  if(link)el("explorer").href=link;
+  val("explorer",page==="pending"?"View wallet activity":"View in explorer");
+  let result="Waiting for on-chain confirmation.";
+  if(pending?.submissionError)result="Delivery is unconfirmed. "+pending.submissionError;
+  if(expired)result="The signing window has expired. Checking whether the request reached the chain.";
+  val("result",page==="error"?s.error:page==="done"?"Transaction confirmed on-chain.":result);
+  val("status",(page==="sendAmount"&&s.amountNote)||s.message||(page==="review"&&pending?"A previous transaction is pending. View its status before signing.":"")||(s.address&&!context.unlocked?"Unlock your wallet on your phone to send funds.":"")||(s.network==="testnet"&&page==="swap"?"The GRAM/USDT pair is available on Mainnet.":""));
 }

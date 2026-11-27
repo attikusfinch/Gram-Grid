@@ -75,6 +75,10 @@
 .pixel-wallet #menu button::after { inset: auto 3px 3px auto; transform: rotate(180deg); }
 .pixel-wallet #menu button:is(:focus-visible,:hover) { background: #263727; border-color: var(--phosphor); }
 .pixel-wallet #menu button canvas { width: 32px; height: 32px; }
+.recipient-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+.pixel-wallet .recipient-tools button { display: grid; place-items: center; min-height: 48px; padding: 0; }
+.recipient-tools canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.pixel-wallet .recipient-tools button:is(:hover,:focus-visible) { border-color: var(--phosphor); }
 .pixel-wallet :is(.readout,#usd,#total,.asset-picker output,.asset-picker select) {
   font-family: var(--pixel-font); font-weight: 600; letter-spacing: 0; color: var(--phosphor);
 }

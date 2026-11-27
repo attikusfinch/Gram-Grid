@@ -6,7 +6,7 @@ import {paymentQR} from "./payment-qr.js";
 import {display} from "./display.js";
 import {browserDisplay} from "./browser-emulator.js";
 import {el,menu,phone} from "./phone.js";
-import {balances,broadcast,signingState,confirmed,friendly,history,maxFeeReserve,maxSwap,maxTransfer,messageHash,networks,one,rates,same,transferMessage,units} from "./chain.js";
+import {balances,broadcast,signingState,confirmed,expiredBeforeDeployment,friendly,history,maxFeeReserve,maxSwap,maxTransfer,messageHash,networks,one,rates,same,transferMessage,units} from "./chain.js";
 import {readQR} from "./scan.js";
 
 const ui=globalThis.GramGrid,s=ui.create();
@@ -30,7 +30,7 @@ function render(){
     s.screen==="contacts"&&["recipient","phone"].includes(previousPages.at(-1)?.screen)||s.screen==="review"&&Boolean(s.invoice)||s.screen==="swap"&&s.network==="mainnet";
   s.locked=Boolean(local.pub)&&!local.unlocked();
   if(s.screen==="home"){el("transfer").reset();s.usedMax=false;}
-  phone(s,{pending,receipt,busy,chooseContact,unlocked:local.unlocked(),hasVault:Boolean(local.pub)});
+  phone(s,{pending,receipt,busy,chooseContact,walletExplorer:s.address?networks[s.network].explorer+"/"+s.address:"",unlocked:local.unlocked(),hasVault:Boolean(local.pub)});
   el("resume").hidden=!pending||s.screen==="pending";
   glasses.paint();
 }
@@ -77,7 +77,14 @@ async function refresh(){
   try{
     if(record?.hash){
       const match=await confirmed(network,owner,record);
+      const expired=!match&&await expiredBeforeDeployment(network,owner,record);
       if(generation!==epoch)return;
+      if(expired&&pending?.id===record.id){
+        if(stored(key("pending"),null)?.id===record.id)localStorage.removeItem(key("pending"));
+        pending=null;
+        const message="The request expired before the wallet was activated. No funds were sent.";
+        if(s.screen==="pending")err(Error(message));else notify(message);
+      }
       if(match&&pending?.id===record.id){
         localStorage.removeItem(key("pending"));pending=null;
         const hex=/^[a-f0-9]{64}$/i.test(match.hash)?match.hash:Array.from(atob(match.hash),c=>c.charCodeAt(0).toString(16).padStart(2,"0")).join("");
@@ -107,7 +114,7 @@ function setForm(name){
 }
 function chooseContact(c){
   if(!c)return;
-  el("to").value=c.address;el("memo").value="";
+  el("to").setCustomValidity("");el("to").value=c.address;
   if(s.sendMenu)void prepare(false).catch(err);
   else page("send");
 }
@@ -121,7 +128,8 @@ async function scan(src,onLens=false){
   if(invoice.asset==="USDT"&&!networks[s.network].usdt)throw Error("USDT is available on Mainnet.");
   if(invoice.assetSpecified&&invoice.asset!==s.sendAsset)throw Error("This QR requests "+invoice.asset+". Change the send currency first.");
   if(invoice.units!==null&&invoice.units!==s.sendUnits)throw Error("This QR requests "+ui.amount(invoice.units,invoice.asset)+" "+invoice.asset+". Change the amount first.");
-  el("to").value=address;el("memo").value=invoice.memo;
+  el("to").setCustomValidity("");el("to").value=address;
+  if(invoice.memo)el("memo").value=invoice.memo;
   if(onLens)await prepare(false);
 }
 function acceptCurrency(){
@@ -207,10 +215,14 @@ function gesture(input){
 }
 async function prepare(isSwap){
   requireWallet();
-  if(pending||busy)return;
+  if(busy)return;
   const generation=epoch,task=++quoteTask,network=s.network,owner=s.address;
   const asset=s.sendAsset,n=s.sendUnits;
-  const address=isSwap?null:friendly(el("to").value,network);
+  let address=null;
+  if(!isSwap){
+    try{address=friendly(el("to").value,network);}
+    catch{el("to").setCustomValidity("Enter a valid "+network+" TON address.");el("to").reportValidity();return;}
+  }
   const memo=el("memo").value.trim();
   if(isSwap && network!=="mainnet")throw Error("Swaps are available on Mainnet.");
   busy=true;notify(isSwap?"Requesting a STON.fi quote…":"Checking balance…");
@@ -249,9 +261,17 @@ async function sign(){
       const boc=local.withSeed(seed=>signedTransfer(seed,network,owner,tx,state));
       const rec={id:crypto.randomUUID(),time:now(),expires:tx.expires,asset:tx.asset,units:String(tx.units),other:tx.other,minimum:tx.other?String(tx.minimum):null,address:tx.address,memo:tx.memo||"",hash:messageHash(boc)};
       localStorage.setItem(storageKey,JSON.stringify(rec));
-      pending=rec;page("pending");
+      pending=rec;receipt="";page("pending");
       try{await broadcast(network,boc);}
-      catch{notify("No response from TON Center. Checking the submitted message hash.");}
+      catch(e){
+        if(generation!==epoch||pending?.id!==rec.id)return;
+        if(e.rejected){
+          if(stored(storageKey,null)?.id===rec.id)localStorage.removeItem(storageKey);
+          pending=null;err(Error("Submission rejected. "+e.message));return;
+        }
+        rec.submissionError=e.message||"Network connection lost.";
+        if(stored(storageKey,null)?.id===rec.id)localStorage.setItem(storageKey,JSON.stringify(rec));
+      }
       void refresh();
     });
   }catch(e){if(revision===s.revision)throw e;}
@@ -268,6 +288,8 @@ el("network").onchange=handle(()=>{
 });
 el("back").onclick=()=>s.sendMenu?gesture("menuBack"):page("home");el("cancel").onclick=()=>page("home");el("resume").onclick=()=>page("pending");
 el("transfer").onsubmit=handle(()=>prepare(false));el("sign").onclick=handle(sign);
+el("to").oninput=()=>el("to").setCustomValidity("");
+el("pick-qr").onclick=()=>el("file").click();
 el("dismiss").onclick=()=>{if(pending?.expires>now()){notify("Wait until the request expires before dismissing it.");return;}if(!busy&&confirm("Stop tracking? The signed transaction may still go through.")){localStorage.removeItem(key("pending"));pending=null;page("home");}};
 el("copy").onclick=handle(async()=>{await navigator.clipboard.writeText(s.address);notify("Address copied.");});
 el("asset").onchange=el("direction").onchange=e=>{

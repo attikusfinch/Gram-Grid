@@ -37,13 +37,22 @@ export function friendly(value,network){
   return address.toString({testOnly:network==="testnet",bounceable:parsed?.isBounceable??false});
 }
 export const same=(a,b)=>Boolean(a&&b&&Address.parse(a).equals(Address.parse(b)));
+// The public TON Center endpoint shares one request slot across reads and sends.
+const nextSlot=new Map();
+async function centerFetch(url,options={}){
+  const origin=new URL(url).origin,time=Date.now();
+  const start=Math.max(time,nextSlot.get(origin)??0);
+  nextSlot.set(origin,start+1200);
+  if(start>time)await new Promise(resolve=>setTimeout(resolve,start-time));
+  return fetch(url,{...options,signal:AbortSignal.timeout(12000)});
+}
 async function get(net,route,params){
   const url=new URL(net.base+"/api/v3/"+route);
   for(const [key,val] of Object.entries(params)){
     for(const v of [].concat(val))url.searchParams.append(key,v);
   }
   for(let i=0;i<3;i++){
-    const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
+    const r=await centerFetch(url);
     if(r.ok)return r.json();
     if(r.status!==429||i===2)throw Error("TON Center HTTP "+r.status);
     await new Promise(resolve=>setTimeout(resolve,1200*(i+1)));
@@ -68,8 +77,22 @@ export async function signingState(network,address){
   return reply.wallets.find(row=>same(row.address,address))??{status:"nonexist"};
 }
 export async function broadcast(network,boc){
-  const response=await fetch(networks[network].base+"/api/v3/message",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({boc}),signal:AbortSignal.timeout(12000)});
+  const response=await centerFetch(networks[network].base+"/api/v3/message",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({boc})});
+  if(response.ok)return;
+  const body=await response.json().catch(()=>null);
+  const reason=String(body?.error||body?.result||response.statusText).slice(0,300);
+  const error=Error("TON Center HTTP "+response.status+" · "+reason);
+  error.rejected=[401,403,422,429].includes(response.status);
+  throw error;
+}
+export async function expiredBeforeDeployment(network,owner,record){
+  if(!record.expires||Date.now()/1000<=record.expires+30)return false;
+  const url=new URL(networks[network].base+"/api/v2/getAddressInformation");
+  url.searchParams.set("address",owner);
+  const response=await centerFetch(url,{cache:"no-store"});
   if(!response.ok)throw Error("TON Center HTTP "+response.status);
+  const data=await response.json();
+  return data.ok===true&&data.result?.state==="uninitialized"&&data.result.sync_utime>record.expires+30;
 }
 export function transferRecord(a,net,owner){
   if(!a.success||a.finality!=="finalized")return null;
